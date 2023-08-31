@@ -19,6 +19,15 @@ pub struct ReadTraitFetch<'w, Trait: ?Sized> {
     storage: ReadStorage<'w, Trait>,
 }
 
+impl<'w, Trait: ?Sized> Clone for ReadTraitFetch<'w, Trait> {
+    fn clone(&self) -> Self {
+        Self {
+            sparse_sets: self.sparse_sets.clone(),
+            storage: self.storage.clone(),
+        }
+    }
+}
+
 enum ReadStorage<'w, Trait: ?Sized> {
     Uninit,
     Table {
@@ -39,6 +48,27 @@ enum ReadStorage<'w, Trait: ?Sized> {
     },
 }
 
+impl<'w, Trait: ?Sized> Clone for ReadStorage<'w, Trait> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Uninit => Self::Uninit,
+            Self::Table {
+                column,
+                ticks,
+                meta,
+            } => Self::Table {
+                column: *column,
+                ticks: *ticks,
+                meta: *meta,
+            },
+            Self::SparseSet { components, meta } => Self::SparseSet {
+                components,
+                meta: *meta,
+            },
+        }
+    }
+}
+
 #[doc(hidden)]
 pub struct WriteTraitFetch<'w, Trait: ?Sized> {
     // While we have shared mutable access to all sparse set components,
@@ -52,6 +82,17 @@ pub struct WriteTraitFetch<'w, Trait: ?Sized> {
 
     last_run: Tick,
     this_run: Tick,
+}
+
+impl<'w, Trait: ?Sized> Clone for WriteTraitFetch<'w, Trait> {
+    fn clone(&self) -> Self {
+        Self {
+            sparse_sets: self.sparse_sets.clone(),
+            storage: self.storage.clone(),
+            last_run: self.last_run,
+            this_run: self.this_run,
+        }
+    }
 }
 
 enum WriteStorage<'w, Trait: ?Sized> {
@@ -72,6 +113,29 @@ enum WriteStorage<'w, Trait: ?Sized> {
         components: &'w ComponentSparseSet,
         meta: TraitImplMeta<Trait>,
     },
+}
+
+impl<'w, Trait: ?Sized> Clone for WriteStorage<'w, Trait> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Uninit => Self::Uninit,
+            Self::Table {
+                column,
+                added_ticks,
+                changed_ticks,
+                meta,
+            } => Self::Table {
+                column: *column,
+                added_ticks: *added_ticks,
+                changed_ticks: *changed_ticks,
+                meta: *meta,
+            },
+            Self::SparseSet { components, meta } => Self::SparseSet {
+                components,
+                meta: *meta,
+            },
+        }
+    }
 }
 
 /// [`WorldQuery`] adapter that fetches entities with exactly one component implementing a trait.
@@ -102,28 +166,6 @@ unsafe impl<'a, Trait: ?Sized + TraitQuery> WorldQuery for One<&'a Trait> {
         ReadTraitFetch {
             storage: ReadStorage::Uninit,
             sparse_sets: &world.storages().sparse_sets,
-        }
-    }
-
-    #[inline]
-    unsafe fn clone_fetch<'w>(fetch: &Self::Fetch<'w>) -> Self::Fetch<'w> {
-        ReadTraitFetch {
-            storage: match fetch.storage {
-                ReadStorage::Uninit => ReadStorage::Uninit,
-                ReadStorage::Table {
-                    column,
-                    ticks,
-                    meta,
-                } => ReadStorage::Table {
-                    column,
-                    ticks,
-                    meta,
-                },
-                ReadStorage::SparseSet { components, meta } => {
-                    ReadStorage::SparseSet { components, meta }
-                }
-            },
-            sparse_sets: fetch.sparse_sets,
         }
     }
 
@@ -273,32 +315,6 @@ unsafe impl<'a, Trait: ?Sized + TraitQuery> WorldQuery for One<&'a mut Trait> {
             sparse_sets: &world.storages().sparse_sets,
             last_run,
             this_run,
-        }
-    }
-
-    #[inline]
-    unsafe fn clone_fetch<'w>(fetch: &Self::Fetch<'w>) -> Self::Fetch<'w> {
-        WriteTraitFetch {
-            storage: match fetch.storage {
-                WriteStorage::Uninit => WriteStorage::Uninit,
-                WriteStorage::Table {
-                    column,
-                    meta,
-                    added_ticks,
-                    changed_ticks,
-                } => WriteStorage::Table {
-                    column,
-                    meta,
-                    added_ticks,
-                    changed_ticks,
-                },
-                WriteStorage::SparseSet { components, meta } => {
-                    WriteStorage::SparseSet { components, meta }
-                }
-            },
-            sparse_sets: fetch.sparse_sets,
-            last_run: fetch.last_run,
-            this_run: fetch.this_run,
         }
     }
 

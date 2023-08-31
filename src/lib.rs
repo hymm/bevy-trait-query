@@ -271,7 +271,7 @@ impl RegisterExt for App {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 struct TraitImplRegistry<Trait: ?Sized> {
     // Component IDs are stored contiguously so that we can search them quickly.
     components: Vec<ComponentId>,

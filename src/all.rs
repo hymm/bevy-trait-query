@@ -143,6 +143,16 @@ pub struct ReadAllTraitsFetch<'w, Trait: ?Sized> {
     sparse_sets: &'w SparseSets,
 }
 
+impl<'w, Trait: ?Sized> Clone for ReadAllTraitsFetch<'w, Trait> {
+    fn clone(&self) -> Self {
+        Self {
+            registry: self.registry.clone(),
+            table: self.table,
+            sparse_sets: self.sparse_sets.clone(),
+        }
+    }
+}
+
 /// Write-access to all components implementing a trait for a given entity.
 pub struct WriteTraits<'a, Trait: ?Sized + TraitQuery> {
     // Read-only access to the global trait registry.
@@ -362,6 +372,18 @@ pub struct WriteAllTraitsFetch<'w, Trait: ?Sized + TraitQuery> {
     this_run: Tick,
 }
 
+impl<'w, Trait: ?Sized + TraitQuery> Clone for WriteAllTraitsFetch<'w, Trait> {
+    fn clone(&self) -> Self {
+        Self {
+            registry: self.registry.clone(),
+            table: self.table,
+            sparse_sets: self.sparse_sets.clone(),
+            last_run: self.last_run,
+            this_run: self.this_run,
+        }
+    }
+}
+
 /// `WorldQuery` adapter that fetches all implementations of a given trait for an entity.
 ///
 /// You can usually just use `&dyn Trait` or `&mut dyn Trait` as a `WorldQuery` directly.
@@ -404,15 +426,6 @@ unsafe impl<'a, Trait: ?Sized + TraitQuery> WorldQuery for All<&'a Trait> {
                 .unwrap_or_else(|| trait_registry_error()),
             table: None,
             sparse_sets: &world.storages().sparse_sets,
-        }
-    }
-
-    #[inline]
-    unsafe fn clone_fetch<'w>(fetch: &Self::Fetch<'w>) -> Self::Fetch<'w> {
-        ReadAllTraitsFetch {
-            registry: fetch.registry,
-            table: fetch.table,
-            sparse_sets: fetch.sparse_sets,
         }
     }
 
@@ -523,17 +536,6 @@ unsafe impl<'a, Trait: ?Sized + TraitQuery> WorldQuery for All<&'a mut Trait> {
             sparse_sets: &world.storages().sparse_sets,
             last_run,
             this_run,
-        }
-    }
-
-    #[inline]
-    unsafe fn clone_fetch<'w>(fetch: &Self::Fetch<'w>) -> Self::Fetch<'w> {
-        WriteAllTraitsFetch {
-            registry: fetch.registry,
-            table: fetch.table,
-            sparse_sets: fetch.sparse_sets,
-            last_run: fetch.last_run,
-            this_run: fetch.this_run,
         }
     }
 
