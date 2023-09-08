@@ -56,7 +56,7 @@ fn one1() {
     world.spawn((Human("Garbanzo".to_owned(), 14), Fem));
     world.spawn(Dolphin(27));
 
-    let mut schedule = Schedule::new();
+    let mut schedule = Schedule::default();
     schedule.add_systems((print_info, (age_up, change_name, pluralize)).chain());
 
     schedule.run(&mut world);
@@ -121,7 +121,7 @@ fn all1() {
     world.spawn((Human("Garbanzo".to_owned(), 17), Fem, Dolphin(17)));
     world.spawn(Dolphin(27));
 
-    let mut schedule = Schedule::new();
+    let mut schedule = Schedule::default();
     schedule.add_systems((print_all_info, (age_up_fem, age_up_not)).chain());
 
     schedule.run(&mut world);
@@ -223,7 +223,7 @@ fn sparse1() {
     world.spawn(RecA(vec![]));
     world.spawn((RecA(vec![]), RecB(vec!["Mama mia".to_owned()])));
 
-    let mut schedule = Schedule::new();
+    let mut schedule = Schedule::default();
     schedule.add_systems((print_messages, spawn_sparse).chain());
 
     schedule.run(&mut world);
@@ -279,7 +279,7 @@ fn multi_register() {
     world.spawn((RecA(vec![]), RecB(vec![])));
     world.spawn(RecB(vec![]));
 
-    let mut schedule = Schedule::new();
+    let mut schedule = Schedule::default();
     schedule.add_systems(count_impls);
 
     fn count_impls(q: Query<&dyn Messages>, mut output: ResMut<Output>) {
